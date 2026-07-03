@@ -104,7 +104,7 @@ const syncWorkspaceCreation = inngest.createFunction(
 // Inngest functions to update workspace data in the database
 const syncWorkspaceUpdation = inngest.createFunction(
   {
-  id: "sync-workspace-from-clerk",
+  id: "update-workspace-from-clerk",
   triggers: {
     event: "clerk/organization.updated",
   },
