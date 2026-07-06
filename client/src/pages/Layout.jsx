@@ -20,14 +20,21 @@ const Layout = () => {
     // Initial load of theme
     useEffect(() => {
         dispatch(loadTheme())
-    }, [])
+    }, [dispatch])
 
     // Initial load of workspaces
-    useEffect(() => {
-        if (isLoaded && user && workspaces.length === 0) {
-            dispatch(fetchWorkspaces({ getToken }))
-        }
-    }, [isLoaded, user])
+useEffect(() => {
+    if (isLoaded && user?.id) {
+        dispatch(fetchWorkspaces({ getToken }))
+    }
+}, [isLoaded, user?.id, dispatch])
+    if (!isLoaded) {
+        return (
+            <div className='flex items-center justify-center h-screen bg-white dark:bg-zinc-950'>
+                <Loader2Icon className="size-7 text-blue-500 animate-spin" />
+            </div>
+        )
+    }
 
     if (!user) {
         return (
@@ -37,13 +44,14 @@ const Layout = () => {
         )
     }
 
-    if (loading) return (
+   if (loading && workspaces.length === 0) {
+    return (
         <div className='flex items-center justify-center h-screen bg-white dark:bg-zinc-950'>
             <Loader2Icon className="size-7 text-blue-500 animate-spin" />
         </div>
     )
-
-    if (user && workspaces.length === 0) {
+}
+    if (workspaces.length === 0) {
         return (
             <div className='min-h-screen flex justify-center'>
                 <CreateOrganization />

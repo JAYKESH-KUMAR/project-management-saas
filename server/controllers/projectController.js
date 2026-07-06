@@ -60,7 +60,7 @@ import prisma from "../configs/prisma.js";
         const projectWithMember= await prisma.project.findUnique({
             where:{id:project.id},
             include:{members:{include:{user:true}},
-            task:{include:{assignee:true,comments:{include:{user:true}}}},
+            tasks:{include:{assignee:true,comments:{include:{user:true}}}},
             owner:true,
         }
     })
@@ -124,48 +124,82 @@ export const updateProject = async (req, res) => {
     }
 }
 
-//Add member to project
 
-export const addMember=async (req,res)=>{
+
+// Add member to project
+export const addMember = async (req, res) => {
     try {
-        const {userId} = await req.auth();
-        const {projectId}=req.params;
-        const {email}=req.body;
+        const { userId } = await req.auth();
+        const { projectId } = req.params;
+        const { email } = req.body;
 
-        // check if user is project lead
-        const project=await prisma.project.findUnique({
-            where:{id:projectId},
-            include:{members:{include:{user:true}}}
-        })
-
-        if(!project){
-            return res.status(404).json({message:"Project not found"});
-        }
-
-        if(project.team_lead !== userId){
-            return res.status(404).json({message:"only project lead can add members "});
-        }
-
-        // Check if user is already a member 
-        const existingMember=project.members.find((member)=>member.email === email);
-        if(existingMember){
-            return res.status(400).json({message:"User is already a member of the project"});
-        }
-        const user=await prisma.user.findUnique({
-            where:{email}
-        })
-        if(!user){
-            return res.status(404).json({message:"User not found"});
-        }
-        const member=await prisma.projectMember.create({
-            data:{
-                userId:user.id,
-                projectId:project.id
+        // Check if user is project lead
+        const project = await prisma.project.findUnique({
+            where: { id: projectId },
+            include: {
+                members: {
+                    include: {
+                        user: true
+                    }
+                }
             }
-        })
-5
+        });
+
+        if (!project) {
+            return res.status(404).json({
+                message: "Project not found"
+            });
+        }
+
+        if (project.team_lead !== userId) {
+            return res.status(403).json({
+                message: "Only project lead can add members"
+            });
+        }
+
+        // Check if user is already a member
+        const existingMember = project.members.find(
+            (member) => member.user.email === email
+        );
+
+        if (existingMember) {
+            return res.status(400).json({
+                message: "User is already a member of the project"
+            });
+        }
+
+        // Find user by email
+        const user = await prisma.user.findUnique({
+            where: { email }
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found"
+            });
+        }
+
+        // Add member
+        const member = await prisma.projectMember.create({
+            data: {
+                userId: user.id,
+                projectId: project.id
+            },
+            include: {
+                user: true
+            }
+        });
+
+        return res.status(201).json({
+            member,
+            message: "Member added successfully"
+        });
+
     } catch (error) {
         console.log(error);
-        res.status(500).json({ message: error.code || error.message });
+
+        return res.status(500).json({
+            message: error.code || error.message
+        });
     }
-}
+};
